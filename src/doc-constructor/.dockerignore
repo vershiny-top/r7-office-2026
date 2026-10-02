@@ -1,0 +1,7 @@
+.git
+__pycache__/
+*.pyc
+*.xlsx
+.venv/
+node_modules/
+out/

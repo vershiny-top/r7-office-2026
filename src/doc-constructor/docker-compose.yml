@@ -1,0 +1,32 @@
+services:
+  # Официальный HTTP-сервер Document Builder.
+  # Образ предварительно загружается вручную: docker load < dc-httpd.tar.gz
+  docbuilder:
+    image: r7-office/dc-httpd:1.0.0
+    container_name: r7-docbuilder-server
+    volumes:
+      # Сюда кладём .docbuilder-скрипт; сервер раздаёт файлы из /app/files
+      - ./workdir:/app/files
+    # Порт наружу не нужен (client обращается по имени сервиса),
+    # но оставлен для отладки через curl с хоста.
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # Клиент: генерирует .docbuilder, шлёт POST, ждёт файл.
+  client:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        RUN pip install --no-cache-dir requests
+        WORKDIR /work
+    image: r7-docbuilder-client:latest
+    container_name: r7-docbuilder-client
+    depends_on:
+      - docbuilder
+    volumes:
+      - ./:/project
+      - ./workdir:/workdir
+    working_dir: /workdir
+    command: python /project/build_via_http.py
